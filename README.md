@@ -50,13 +50,9 @@ Ada dua cara utama untuk mengompilasi dan menjalankan proyek ini:
     ```bash
     javac *.java
     ```
-4.  Kembali ke direktori utama:
+4.  Jalankan kelas utama `DominoSolverGUI` dari direktori utama:
     ```bash
-    cd ..
-    ```
-5.  Jalankan kelas utama `DominoSolverGUI` dari direktori utama:
-    ```bash
-    java src.DominoSolverGUI
+    java DominoSolverGUI
     ```
 
 #### 2. Melalui IDE (IntelliJ IDEA, Eclipse, NetBeans, dll.)
