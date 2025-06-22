@@ -8,9 +8,8 @@ Pemain dapat bermain melawan AI ini dalam sebuah antarmuka grafis yang lengkap, 
 
 ## Screenshot Aplikasi
 
-*(Disarankan untuk mengganti gambar ini dengan screenshot final dari aplikasi Anda)*
 
-![Screenshot Game Domino](https://i.imgur.com/YwNymf8.png)
+![Screenshot Game Domino]([https://i.imgur.com/YwNymf8.png](https://github.com/Abrar-Abhirama/DominoWithBackTracking/blob/main/readmeImage.png))
 
 ## Fitur Utama
 
