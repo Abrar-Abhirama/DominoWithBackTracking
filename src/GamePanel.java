@@ -35,19 +35,29 @@ public class GamePanel extends JPanel {
     private Rectangle leftEndRect, rightEndRect;
 
     // --- Konstanta Visual ---
-    private final int H_WIDTH = 100, H_HEIGHT = 50;
-    private final int V_WIDTH = 60, V_HEIGHT = 120;
+    private final int H_WIDTH = 80, H_HEIGHT = 40;
+    private final int V_WIDTH = 45, V_HEIGHT = 90;
+    private final Font MODERN_FONT = new Font("SansSerif", Font.PLAIN, 12);
+    private final Font MODERN_FONT_BOLD = new Font("SansSerif", Font.BOLD, 14);
+    private final Color BACKGROUND_COLOR = new Color(28, 32, 38);
+    private final Color FOREGROUND_COLOR = new Color(200, 200, 200);
+    private final Color DOMINO_COLOR = new Color(240, 240, 240);
+    private final Color PIP_COLOR = new Color(40, 40, 40);
 
     public GamePanel() {
-        JButton newGameButton = new JButton("Game Baru");
-        JButton passButton = new JButton("Pass");
+        setBackground(BACKGROUND_COLOR);
         
-        this.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 20));
-        this.add(newGameButton);
-        this.add(passButton);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        buttonPanel.setOpaque(false);
 
-        newGameButton.addActionListener(e -> startNewGame());
-        passButton.addActionListener(e -> handlePassTurn());
+        JButton newGameButton = createStyledButton("Game Baru");
+        JButton passButton = createStyledButton("Pass");
+
+        buttonPanel.add(newGameButton);
+        buttonPanel.add(passButton);
+
+        setLayout(new BorderLayout());
+        add(buttonPanel, BorderLayout.NORTH);
 
         this.addMouseListener(new MouseAdapter() {
             @Override
@@ -56,7 +66,20 @@ public class GamePanel extends JPanel {
             }
         });
 
+        newGameButton.addActionListener(e -> startNewGame());
+        passButton.addActionListener(e -> handlePassTurn());
+
         startNewGame();
+    }
+
+    private JButton createStyledButton(String text) {
+        JButton button = new JButton(text);
+        button.setBackground(new Color(60, 63, 70));
+        button.setForeground(FOREGROUND_COLOR);
+        button.setFont(MODERN_FONT_BOLD);
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        return button;
     }
 
     private void startNewGame() {
@@ -192,7 +215,7 @@ public class GamePanel extends JPanel {
             return;
         }
         
-        Timer enemyTimer = new Timer(1500, e -> {
+        Timer enemyTimer = new Timer(1000, e -> {
             executeEnemyTurn();
             ((Timer)e.getSource()).stop();
         });
@@ -200,58 +223,65 @@ public class GamePanel extends JPanel {
         enemyTimer.start();
     }
     
+    // ===================================================================
+    //                  KEMBALI KE AI SEDERHANA & STABIL
+    // ===================================================================
     private void executeEnemyTurn() {
         if (isGameOver) return;
-        System.out.println("Musuh sedang berpikir...");
-        
+        gameMessage = "Giliran Musuh...";
+        repaint();
+        System.out.println("Musuh mencari langkah...");
+
+        // Cari langkah valid pertama yang bisa dimainkan
         for (Domino d : new ArrayList<>(enemyHand)) {
             if (board.isEmpty() || d.getVal1() == currentRightEnd || d.getVal2() == currentRightEnd) {
+                System.out.println("AI memainkan: " + d + " di kanan.");
                 enemyHand.remove(d);
                 board.addLast(d);
                 gameMessage = "Musuh memainkan " + d + ". Giliran Anda.";
                 enemyPassed = false;
                 updateBoardEnds();
                 endEnemyTurn();
-                return;
+                return; // Keluar setelah menemukan langkah
             } else if (d.getVal1() == currentLeftEnd || d.getVal2() == currentLeftEnd) {
+                System.out.println("AI memainkan: " + d + " di kiri.");
                 enemyHand.remove(d);
                 board.addFirst(d);
                 gameMessage = "Musuh memainkan " + d + ". Giliran Anda.";
                 enemyPassed = false;
                 updateBoardEnds();
                 endEnemyTurn();
-                return;
+                return; // Keluar setelah menemukan langkah
             }
         }
-        
+
+        // Jika loop selesai dan tidak ada langkah, musuh pass
         enemyPassed = true;
         gameMessage = "Musuh pass. Giliran Anda.";
-        System.out.println("Musuh tidak punya kartu untuk dimainkan.");
+        System.out.println("Musuh tidak punya langkah dan pass.");
         endEnemyTurn();
     }
-
+    
     private void endEnemyTurn() {
         repaint();
         if (enemyHand.isEmpty()) {
             gameOver("Sayang sekali, Anda Kalah!");
             return;
         }
-        
         if (playerPassed && enemyPassed) {
              int playerScore = calculateHandScore(playerHand);
              int enemyScore = calculateHandScore(enemyHand);
              String finalMessage;
              if (playerScore < enemyScore) {
-                 finalMessage = "Game Macet! Anda Menang dengan skor " + playerScore + " vs " + enemyScore;
+                 finalMessage = "Game Macet! Anda Menang (skor " + playerScore + " vs " + enemyScore + ")";
              } else if (enemyScore < playerScore) {
-                 finalMessage = "Game Macet! Anda Kalah dengan skor " + playerScore + " vs " + enemyScore;
+                 finalMessage = "Game Macet! Anda Kalah (skor " + playerScore + " vs " + enemyScore + ")";
              } else {
-                 finalMessage = "Game Macet! Hasil Seri dengan skor " + playerScore;
+                 finalMessage = "Game Macet! Hasil Seri (skor " + playerScore + ")";
              }
              gameOver(finalMessage);
              return;
         }
-
         isPlayerTurn = true;
     }
 
@@ -272,14 +302,8 @@ public class GamePanel extends JPanel {
     
     private void calculatePipCounts() {
         Arrays.fill(pipCounts, 0);
-        for (Domino d : playerHand) {
-            pipCounts[d.getVal1()]++;
-            pipCounts[d.getVal2()]++;
-        }
-        for (Domino d : enemyHand) {
-            pipCounts[d.getVal1()]++;
-            pipCounts[d.getVal2()]++;
-        }
+        for (Domino d : playerHand) { pipCounts[d.getVal1()]++; pipCounts[d.getVal2()]++; }
+        for (Domino d : enemyHand) { pipCounts[d.getVal1()]++; pipCounts[d.getVal2()]++; }
     }
 
     @Override
@@ -287,13 +311,9 @@ public class GamePanel extends JPanel {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setColor(new Color(13, 71, 161));
+        g2d.setColor(BACKGROUND_COLOR);
         g2d.fillRect(0, 0, getWidth(), getHeight());
         
-        g2d.setColor(Color.WHITE);
-        g2d.setFont(new Font("SansSerif", Font.BOLD, 16));
-
-        // --- Gambar Komponen-komponen Game ---
         paintEnemyHand(g2d);
         paintBoard(g2d);
         paintPlayerHand(g2d);
@@ -302,141 +322,140 @@ public class GamePanel extends JPanel {
     }
     
     private void paintEnemyHand(Graphics2D g2d) {
-        g2d.drawString("Tangan Musuh ("+ enemyHand.size() +" kartu)", 50, 40);
-        int enemyX = 50;
+        g2d.setFont(MODERN_FONT_BOLD);
+        g2d.setColor(FOREGROUND_COLOR);
+        g2d.drawString("Musuh ("+ enemyHand.size() +" kartu)", 20, 60);
+        int enemyX = 20;
         for (int i = 0; i < enemyHand.size(); i++) {
-            drawCardBack(g2d, enemyX, 60);
-            enemyX += 70;
+            drawCardBack(g2d, enemyX, 75);
+            enemyX += V_WIDTH + 5;
         }
     }
 
     private void paintBoard(Graphics2D g2d) {
-        g2d.drawString("Papan Permainan", 50, 180);
+        g2d.setFont(MODERN_FONT_BOLD);
+        g2d.setColor(FOREGROUND_COLOR);
+        g2d.drawString("Papan Permainan", 20, 180);
+        
+        int yPos = 225;
+
         if (!board.isEmpty()) {
             int totalWidth = 0;
             for (Domino d : board) totalWidth += (d.getVal1() == d.getVal2()) ? V_WIDTH : H_WIDTH;
+            
             int currentX = getWidth() / 2 - totalWidth / 2;
             int prevEnd = -1;
-
-            // Logika untuk menyimpan orientasi yang benar dari rantai
-            Deque<Integer> leftChain = new LinkedList<>();
-            Deque<Integer> rightChain = new LinkedList<>();
-            Domino first = board.getFirst();
-            leftChain.add(first.getVal1());
-            rightChain.add(first.getVal2());
+            
             if(board.size() > 1) {
-                 Domino second = ((LinkedList<Domino>)board).get(1);
-                 if (second.getVal1() != first.getVal2() && second.getVal2() != first.getVal2()) {
-                      leftChain.clear();
-                      rightChain.clear();
-                      leftChain.add(first.getVal2());
-                      rightChain.add(first.getVal1());
-                 }
+                Domino first = board.getFirst();
+                Domino second = ((LinkedList<Domino>)board).get(1);
+                if(first.getVal1() == second.getVal1() || first.getVal1() == second.getVal2()){
+                    prevEnd = first.getVal1();
+                } else {
+                    prevEnd = first.getVal2();
+                }
+            } else if (board.size() == 1) {
+                prevEnd = board.getFirst().getVal1();
             }
-
 
             for(Domino d : board) {
                 int valA = d.getVal1();
                 int valB = d.getVal2();
-                
-                // Tentukan orientasi berdasarkan ujung rantai
-                if(d != board.getFirst()) {
-                     if (valA == rightChain.getLast() || valB == rightChain.getLast()) { // Menempel di kanan
-                          if(valB == rightChain.getLast()) {int temp=valA; valA=valB; valB=temp;}
-                          rightChain.removeLast();
-                          rightChain.add(valA);
-                          rightChain.add(valB);
-                     } else { // Menempel di kiri
-                          if(valA == leftChain.getFirst()) {int temp=valA; valA=valB; valB=temp;}
-                          leftChain.removeFirst();
-                          leftChain.addFirst(valA);
-                          leftChain.addFirst(valB);
-                     }
+                if(d != board.getFirst() && valB == prevEnd) {
+                    int temp = valA; valA = valB; valB = temp;
                 }
-                
+
                 boolean isDouble = valA == valB;
                 boolean isHorizontal = !isDouble;
                 int currentWidth = isHorizontal ? H_WIDTH : V_WIDTH;
                 int currentHeight = isHorizontal ? H_HEIGHT : V_HEIGHT;
-                int yPos = 225 - currentHeight / 2;
-                drawDomino(g2d, valA, valB, currentX, yPos, isHorizontal);
+                int currentY = yPos - currentHeight / 2;
+                drawDomino(g2d, valA, valB, currentX, currentY, isHorizontal);
                 
-                if (d == board.getFirst()) leftEndRect = new Rectangle(currentX, yPos, currentWidth / 2, currentHeight);
-                if (d == board.getLast()) rightEndRect = new Rectangle(currentX + currentWidth / 2, yPos, currentWidth / 2, currentHeight);
-                currentX += currentWidth;
+                if (d == board.getFirst()) leftEndRect = new Rectangle(currentX, currentY, currentWidth / 2, currentHeight);
+                if (d == board.getLast()) rightEndRect = new Rectangle(currentX + currentWidth / 2, currentY, currentWidth / 2, currentHeight);
+                currentX += currentWidth + 2;
+                prevEnd = valB;
             }
         } else {
-             leftEndRect = new Rectangle(getWidth()/2 - H_WIDTH, 200, H_WIDTH * 2, H_HEIGHT);
+             leftEndRect = new Rectangle(getWidth()/2 - H_WIDTH, yPos - H_HEIGHT/2, H_WIDTH * 2, H_HEIGHT);
              rightEndRect = leftEndRect;
+
              if (selectedDomino != null) {
                  g2d.setColor(new Color(255, 255, 255, 70));
                  Stroke dashed = new BasicStroke(3, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{9}, 0);
                  g2d.setStroke(dashed);
-                 g2d.drawRect(getWidth()/2 - H_WIDTH/2, 200, H_WIDTH, H_HEIGHT);
+                 g2d.drawRect(getWidth()/2 - H_WIDTH/2, yPos - H_HEIGHT/2, H_WIDTH, H_HEIGHT);
                  g2d.setFont(new Font("SansSerif", Font.ITALIC, 12));
-                 g2d.drawString("Letakkan di sini", getWidth()/2 - 35, 230);
+                 g2d.setColor(FOREGROUND_COLOR);
+                 g2d.drawString("Letakkan di sini", getWidth()/2 - 35, yPos + 5);
              }
         }
     }
     
     private void paintPlayerHand(Graphics2D g2d) {
-        g2d.setFont(new Font("SansSerif", Font.BOLD, 16));
+        int handY = getHeight() - V_HEIGHT - 40; 
+        int titleY = handY - 15;
+
+        g2d.setFont(MODERN_FONT_BOLD);
+        g2d.setColor(FOREGROUND_COLOR);
         g2d.setStroke(new BasicStroke());
-        g2d.drawString("Tangan Anda ("+ playerHand.size() +" kartu)", 50, 520);
+        g2d.drawString("Tangan Anda ("+ playerHand.size() +" kartu)", 20, titleY);
         playerHandRects.clear();
-        int handX = 50;
+        int handX = 20;
         for (Domino d : playerHand) {
-            Rectangle rect = new Rectangle(handX, 540, V_WIDTH, V_HEIGHT);
+            Rectangle rect = new Rectangle(handX, handY, V_WIDTH, V_HEIGHT);
             playerHandRects.put(d, rect);
-            drawDomino(g2d, d.getVal1(), d.getVal2(), handX, 540, false);
+            drawDomino(g2d, d.getVal1(), d.getVal2(), handX, handY, false);
             if (d.equals(selectedDomino)) {
-                g2d.setColor(new Color(255, 255, 0, 100));
+                g2d.setColor(new Color(255, 255, 102, 120));
                 g2d.fillRoundRect(rect.x, rect.y, rect.width, rect.height, 10,10);
             }
-            handX += 70;
+            handX += V_WIDTH + 5;
         }
     }
 
     private void paintPipCountDisplay(Graphics2D g2d) {
         calculatePipCounts();
-        g2d.setStroke(new BasicStroke());
-        g2d.setFont(new Font("SansSerif", Font.BOLD, 14));
-        g2d.setColor(Color.WHITE);
-        g2d.drawString("Jumlah Angka Tersisa (di Tangan):", 50, 680);
+        int pipCountX = getWidth() - 120;
+        int pipCountY = 60;
         
-        int countX = 50;
-        int countY = 695;
+        g2d.setFont(MODERN_FONT_BOLD);
+        g2d.setColor(FOREGROUND_COLOR);
+        g2d.drawString("Sisa Angka", pipCountX, pipCountY);
+        pipCountY += 15;
+        
+        g2d.setFont(MODERN_FONT);
         for (int i = 0; i <= 6; i++) {
-            g2d.setColor(Color.WHITE);
-            g2d.fillRoundRect(countX, countY, 30, 30, 5, 5);
-            drawMiniPips(g2d, i, countX, countY, 30, 30);
+            g2d.setColor(DOMINO_COLOR);
+            g2d.fillRoundRect(pipCountX, pipCountY, 20, 20, 5, 5);
+            drawMiniPips(g2d, i, pipCountX, pipCountY, 20, 20);
             
-            g2d.setFont(new Font("SansSerif", Font.BOLD, 20));
-            g2d.setColor(Color.WHITE);
-            g2d.drawString(": " + pipCounts[i], countX + 32, countY + 23);
-            countX += 90;
+            g2d.setColor(FOREGROUND_COLOR);
+            g2d.drawString(": " + pipCounts[i], pipCountX + 25, pipCountY + 15);
+            pipCountY += 25;
         }
     }
     
     private void paintGameMessage(Graphics2D g2d) {
-        g2d.setFont(new Font("SansSerif", Font.BOLD, 20));
-        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 16));
+        g2d.setColor(FOREGROUND_COLOR);
         FontMetrics fm = g2d.getFontMetrics();
         int msgWidth = fm.stringWidth(gameMessage);
-        g2d.drawString(gameMessage, getWidth() / 2 - msgWidth / 2, 450);
+        g2d.drawString(gameMessage, getWidth() / 2 - msgWidth / 2, getHeight() - 20);
     }
 
     private void drawCardBack(Graphics2D g2d, int x, int y) {
-        g2d.setColor(new Color(200, 200, 220));
-        g2d.fillRoundRect(x, y, V_WIDTH, 100, 10, 10);
+        g2d.setColor(new Color(70, 73, 80));
+        g2d.fillRoundRect(x, y, V_WIDTH, V_HEIGHT, 10, 10);
         g2d.setColor(Color.BLACK);
-        g2d.drawRoundRect(x, y, V_WIDTH, 100, 10, 10);
+        g2d.drawRoundRect(x, y, V_WIDTH, V_HEIGHT, 10, 10);
     }
     
     private void drawDomino(Graphics2D g2d, int val1, int val2, int x, int y, boolean horizontal) {
         int cardWidth = horizontal ? H_WIDTH : V_WIDTH;
         int cardHeight = horizontal ? H_HEIGHT : V_HEIGHT;
-        g2d.setColor(Color.WHITE);
+        g2d.setColor(DOMINO_COLOR);
         g2d.fillRoundRect(x, y, cardWidth, cardHeight, 10, 10);
         g2d.setColor(Color.BLACK);
         g2d.drawRoundRect(x, y, cardWidth, cardHeight, 10, 10);
@@ -451,9 +470,9 @@ public class GamePanel extends JPanel {
         }
     }
 
-    private void drawMiniPips(Graphics2D g2d, int value, int x, int y, int width, int height) {
-        g2d.setColor(new Color(229, 57, 53));
-        int pipSize = 5;
+    private void drawPips(Graphics2D g2d, int value, int x, int y, int width, int height) {
+        g2d.setColor(PIP_COLOR);
+        int pipSize = 8;
         int padding = 4;
         int centerX = x + width / 2;
         int centerY = y + height / 2;
@@ -465,23 +484,21 @@ public class GamePanel extends JPanel {
         if (value >= 2) { g2d.fillOval(left, top, pipSize, pipSize); g2d.fillOval(right, bottom, pipSize, pipSize); }
         if (value >= 4) { g2d.fillOval(right, top, pipSize, pipSize); g2d.fillOval(left, bottom, pipSize, pipSize); }
         if (value == 6) { g2d.fillOval(left, centerY - pipSize / 2, pipSize, pipSize); g2d.fillOval(right, centerY - pipSize / 2, pipSize, pipSize); }
-        else if (value == 0) {}
     }
-    private void drawPips(Graphics2D g2d, int value, int x, int y, int width, int height) {
-        g2d.setColor(new Color(229, 57, 53));
-        int pipSize = 10;
-        int padding = 5;
+    
+    private void drawMiniPips(Graphics2D g2d, int value, int x, int y, int width, int height) {
+        g2d.setColor(PIP_COLOR);
+        int pipSize = 4;
+        int padding = 3;
         int centerX = x + width / 2;
         int centerY = y + height / 2;
         int left = x + padding;
         int right = x + width - padding - pipSize;
         int top = y + padding;
         int bottom = y + height - padding - pipSize;
-        
         if (value == 1 || value == 3 || value == 5) g2d.fillOval(centerX - pipSize / 2, centerY - pipSize / 2, pipSize, pipSize);
         if (value >= 2) { g2d.fillOval(left, top, pipSize, pipSize); g2d.fillOval(right, bottom, pipSize, pipSize); }
         if (value >= 4) { g2d.fillOval(right, top, pipSize, pipSize); g2d.fillOval(left, bottom, pipSize, pipSize); }
         if (value == 6) { g2d.fillOval(left, centerY - pipSize / 2, pipSize, pipSize); g2d.fillOval(right, centerY - pipSize / 2, pipSize, pipSize); }
     }
-    
 }
