@@ -81,5 +81,4 @@ Proyek ini terdiri dari 4 file Java utama di dalam folder `src`:
 
 ## Author
 
-* **Abrar Abhirama Widyadhana**
-* **13523038**
+* **Abrar Abhirama Widyadhana - 13523038**
