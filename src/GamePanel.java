@@ -467,7 +467,7 @@ public class GamePanel extends JPanel {
         if (value == 6) { g2d.fillOval(left, centerY - pipSize / 2, pipSize, pipSize); g2d.fillOval(right, centerY - pipSize / 2, pipSize, pipSize); }
         else if (value == 0) {}
     }
-     private void drawPips(Graphics2D g2d, int value, int x, int y, int width, int height) {
+    private void drawPips(Graphics2D g2d, int value, int x, int y, int width, int height) {
         g2d.setColor(new Color(229, 57, 53));
         int pipSize = 10;
         int padding = 5;
